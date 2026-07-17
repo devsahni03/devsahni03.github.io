@@ -90,6 +90,45 @@
     background: #FBF3EF; border-left: 3px solid var(--coral); padding: 12px 16px;
     border-radius: 6px; font-size: 13.5px; color: #5B3A2C; margin-top: 14px;
   }
+  
+  /* Modern Segmented Control Tabs Layout */
+  .tab-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .tab-btn {
+    background: #EAF0F9;
+    border: 1px solid var(--border);
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--navy);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tab-btn:hover {
+    background: #D5E1F2;
+  }
+  .tab-btn.active {
+    background: var(--navy);
+    color: #FFFFFF;
+    border-color: var(--navy);
+  }
+  .tab-content {
+    display: none;
+  }
+  .tab-content.active {
+    display: block;
+  }
+
   .code-card {
     background: #12161f; border-radius: 10px; overflow: hidden; border: 1px solid var(--border);
   }
@@ -165,26 +204,102 @@
     </table>
   </section>
 
+  <!-- Interactive 3-Button Technical Artifacts Explorer -->
   <section>
-    <h2 class="section-title">Power BI report</h2>
-    <p class="body-text">A 2-page Power BI report built on the same dataset, with DAX measures for revenue leakage, denial rate, and a benchmark-based recovery opportunity calculation.</p>
-    <div class="chart-grid">
-      <div class="chart-card full">
-        <h3>Revenue Cycle Overview</h3>
-        <img src="powerbi-overview.jpg" alt="Power BI Revenue Cycle Overview page showing KPI cards, leakage trend, denial rate by payer, and collection rate by department" style="width:100%; border-radius:6px; border:1px solid var(--border);">
-      </div>
-      <div class="chart-card full">
-        <h3>Denial Deep-Dive</h3>
-        <img src="powerbi-denial.jpg" alt="Power BI Denial Deep-Dive page showing denied revenue by reason and a recoverable revenue table by payer" style="width:100%; border-radius:6px; border:1px solid var(--border);">
+    <h2 class="section-title">Technical Deep-Dive &amp; Pipeline Architecture</h2>
+    <p class="body-text">Explore the modular layers of this analytical engine. Toggle tabs seamlessly to view dashboard visualizations, core data engineering mutations, or localized query definitions.</p>
+    
+    <div class="tab-buttons">
+      <button class="tab-btn active" onclick="openEngineTab(event, 'pbi-layer')">📊 Power BI Snapshots</button>
+      <button class="tab-btn" onclick="openEngineTab(event, 'python-layer')">🐍 Python Analysis</button>
+      <button class="tab-btn" onclick="openEngineTab(event, 'sql-layer')">💾 SQL Query Engine</button>
+    </div>
+
+    <!-- Power BI Section -->
+    <div id="pbi-layer" class="tab-content active">
+      <div class="chart-grid">
+        <div class="chart-card full">
+          <h3>Revenue Cycle Overview Dashboard</h3>
+          <img src="powerbi-overview.jpg" alt="Power BI Revenue Cycle Overview page showing KPI cards, leakage trend, denial rate by payer, and collection rate by department" style="width:100%; border-radius:6px; border:1px solid var(--border);">
+        </div>
+        <div class="chart-card full">
+          <h3>Denial Deep-Dive Dashboard</h3>
+          <img src="powerbi-denial.jpg" alt="Power BI Denial Deep-Dive page showing denied revenue by reason and a recoverable revenue table by payer" style="width:100%; border-radius:6px; border:1px solid var(--border);">
+        </div>
       </div>
     </div>
-    <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
-      <a href="healthcare-sql.html" style="display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:var(--navy); background:#EAF0F9; padding:9px 16px; border-radius:8px; text-decoration:none;">
-        View SQL Queries &rarr;
-      </a>
-      <a href="healthcare-python.html" style="display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:var(--teal); background:#E7F4F0; padding:9px 16px; border-radius:8px; text-decoration:none;">
-        View Python Code &rarr;
-      </a>
+
+    <!-- Python Code Section -->
+    <div id="python-layer" class="tab-content">
+      <div class="code-card">
+        <div class="code-head">
+          <div><span class="dot" style="background:#ff5f56;"></span><span class="dot" style="background:#ffbd2e;"></span><span class="dot" style="background:#27c93f;"></span> pipeline_transformation.py</div>
+          <div>Python (pandas + numpy)</div>
+        </div>
+        <pre><code>import pandas as pd
+import numpy as np
+
+# Load synthetic encounter transactions dataset
+df = pd.read_csv("healthcare_encounters.csv")
+
+# 1. Compute foundational revenue performance metrics by Payer
+payer_pipeline = df.groupby("payer").agg(
+    total_billed=("billed_amount", "sum"),
+    total_claims=("claim_id", "count"),
+    denied_claims=("claim_status", lambda x: (x == "Denied").sum())
+).reset_index()
+
+# 2. Evaluate comparative denial rates and locate optimization benchmark target
+payer_pipeline["denial_rate"] = (payer_pipeline["denied_claims"] / payer_pipeline["total_claims"]) * 100
+best_performing_benchmark = payer_pipeline["denial_rate"].min()
+
+# 3. Model recovery opportunity tracking architecture in Crores
+payer_pipeline["total_billed_cr"] = payer_pipeline["total_billed"] / 10000000
+payer_pipeline["est_recoverable_cr"] = np.where(
+    payer_pipeline["denial_rate"] > best_performing_benchmark,
+    ((payer_pipeline["denial_rate"] - best_performing_benchmark) / 100) * payer_pipeline["total_billed_cr"],
+    0.0
+)
+
+# Output normalized strategic priority dataframes
+print(payer_pipeline[["payer", "total_billed_cr", "denial_rate", "est_recoverable_cr"]].sort_values(by="est_recoverable_cr", ascending=False))</code></pre>
+      </div>
+    </div>
+
+    <!-- SQL Code Section -->
+    <div id="sql-layer" class="tab-content">
+      <div class="code-card">
+        <div class="code-head">
+          <div><span class="dot" style="background:#ff5f56;"></span><span class="dot" style="background:#ffbd2e;"></span><span class="dot" style="background:#27c93f;"></span> audit_recovery_sizing.sql</div>
+          <div>SQL Engine (SQLite / PostgreSQL)</div>
+        </div>
+        <pre><code>WITH PayerBaseMetrics AS (
+    SELECT 
+        payer,
+        SUM(billed_amount) AS total_billed_raw,
+        SUM(CASE WHEN claim_status = 'Denied' THEN 1 ELSE 0 END) * 100.0 / COUNT(*) AS payer_denial_rate
+    FROM billing_ledger.patient_encounters
+    GROUP BY payer
+),
+BenchmarkTarget AS (
+    -- Dynamically isolate minimum baseline friction point across networks
+    SELECT MIN(payer_denial_rate) AS best_performing_rate FROM PayerBaseMetrics
+)
+SELECT 
+    p.payer,
+    ROUND(p.total_billed_raw / 10000000.0, 2) AS total_billed_cr,
+    ROUND(p.payer_denial_rate, 1) AS final_denial_rate,
+    ROUND(
+        CASE 
+            WHEN p.payer_denial_rate > b.best_performing_rate 
+            THEN ((p.payer_denial_rate - b.best_performing_rate) / 100.0) * (p.total_billed_raw / 10000000.0)
+            ELSE 0.0 
+        END, 2
+    ) AS estimated_recoverable_cr
+FROM PayerBaseMetrics p
+CROSS JOIN BenchmarkTarget b
+ORDER BY estimated_recoverable_cr DESC;</code></pre>
+      </div>
     </div>
   </section>
 
@@ -216,6 +331,20 @@ const kpi = {
 };
 
 const NAVY = "#1F3864", TEAL = "#0F6E56", CORAL = "#993C1D", MUTED = "#8A93A0";
+
+// Interface Switch Core Architecture Logic
+function openEngineTab(evt, targetLayerId) {
+  const contents = document.getElementsByClassName("tab-content");
+  for (let i = 0; i < contents.length; i++) {
+    contents[i].classList.remove("active");
+  }
+  const buttons = document.getElementsByClassName("tab-btn");
+  for (let i = 0; i < buttons.length; i++) {
+    buttons[i].classList.remove("active");
+  }
+  document.getElementById(targetLayerId).classList.add("active");
+  evt.currentTarget.classList.add("active");
+}
 
 // KPI cards
 const kpiGrid = document.getElementById("kpiGrid");
