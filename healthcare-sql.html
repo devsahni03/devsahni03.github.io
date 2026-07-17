@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL Code | Healthcare Revenue Analytics | Dev Sahni</title>
+<style>
+  :root {
+    --navy: #1F3864; --teal: #0F6E56; --coral: #993C1D;
+    --bg: #F7F8FA; --card: #FFFFFF; --border: #E3E6EA;
+    --text-primary: #1A1A1A; --text-secondary: #5B6472; --text-muted: #8A93A0;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text-primary); }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 40px 24px 80px; }
+  .back-link { font-size: 13px; color: var(--navy); text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .nav-row { display:flex; gap:16px; margin-top:14px; }
+  .nav-row a.switch-link {
+    font-size: 12.5px; font-weight:600; padding: 6px 13px; border-radius: 7px;
+    text-decoration:none; border:1px solid var(--border); color: var(--text-secondary);
+  }
+  .nav-row a.switch-link.active { background: var(--navy); color:#fff; border-color: var(--navy); }
+  h1 { font-size: 24px; color: var(--navy); margin: 14px 0 6px; }
+  p.lead { color: var(--text-secondary); font-size: 14.5px; max-width: 720px; line-height: 1.7; margin-bottom: 30px; }
+  h2.section-title { font-size: 15px; margin: 40px 0 12px; color: var(--text-primary); font-weight: 700; }
+  p.file-note { font-size: 13px; color: var(--text-muted); margin: 0 0 12px; }
+  .code-card { background: #12161f; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+  .code-head { display:flex; align-items:center; justify-content:space-between; background:#0b0e14; padding:9px 16px; font-size:12px; color:#8A93A0; font-family: monospace; }
+  .code-card pre { margin:0; padding:20px; font-size:13px; line-height:1.65; color:#dbe2ea; font-family: "Fira Code","SFMono-Regular",Consolas,monospace; overflow-x:auto; }
+  .dot { width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:5px; }
+  .copy-btn { font-size:11.5px; color:#8A93A0; background:none; border:1px solid #2a3040; padding:4px 10px; border-radius:6px; cursor:pointer; font-family: inherit; }
+  .copy-btn:hover { color:#dbe2ea; border-color:#3d4657; }
+  footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="healthcare-dashboard.html">&larr; Back to dashboard</a>
+  <div class="nav-row">
+    <a class="switch-link active" href="healthcare-sql.html">SQL</a>
+    <a class="switch-link" href="healthcare-python.html">Python</a>
+  </div>
+  <h1>SQL &mdash; Healthcare Revenue Analytics</h1>
+  <p class="lead">Analysis queries run against the 72,000-row synthetic encounters dataset in SQLite, using multi-table joins, subqueries, and aggregate functions. Full file (6 queries total) is in the <a href="https://github.com/devsahni03/healthcare-revenue-analytics" target="_blank" rel="noopener" style="color:var(--navy); font-weight:600;">GitHub repo</a>.</p>
+
+  <h2 class="section-title">Revenue leakage &amp; recovery opportunity</h2>
+  <p class="file-note">revenue_cycle_analysis.sql</p>
+  <div class="code-card">
+    <div class="code-head">
+      <span><span class="dot" style="background:#ff5f56;"></span><span class="dot" style="background:#ffbd2e;"></span><span class="dot" style="background:#27c93f;"></span> revenue_cycle_analysis.sql</span>
+      <button class="copy-btn" onclick="copyCode('sql-code', this)">Copy</button>
+    </div>
+    <pre id="sql-code">-- Recovery opportunity: what if every payer matched the best payer's denial rate?
+SELECT
+    payer,
+    ROUND(SUM(billed_amount) / 1e7, 2) AS total_billed_cr,
+    ROUND(
+        (SUM(CASE WHEN claim_status = 'Denied' THEN billed_amount ELSE 0 END)
+         - (SELECT MIN(min_rate.denial_rate) FROM (
+                SELECT payer, 1.0 * SUM(CASE WHEN claim_status='Denied' THEN 1 ELSE 0 END)/COUNT(*) AS denial_rate
+                FROM encounters GROUP BY payer
+            ) min_rate) * SUM(billed_amount)
+        ) / 1e7, 2
+    ) AS estimated_recoverable_cr
+FROM encounters
+GROUP BY payer
+ORDER BY estimated_recoverable_cr DESC;</pre>
+  </div>
+
+  <h2 class="section-title">Department contribution margin</h2>
+  <p class="file-note">revenue_cycle_analysis.sql (continued)</p>
+  <div class="code-card">
+    <div class="code-head">
+      <span><span class="dot" style="background:#ff5f56;"></span><span class="dot" style="background:#ffbd2e;"></span><span class="dot" style="background:#27c93f;"></span> revenue_cycle_analysis.sql</span>
+      <button class="copy-btn" onclick="copyCode('sql-code2', this)">Copy</button>
+    </div>
+    <pre id="sql-code2">SELECT
+    e.department,
+    COUNT(*) AS encounters,
+    ROUND(SUM(e.billed_amount) / 1e7, 2) AS billed_cr,
+    ROUND(SUM(COALESCE(e.paid_amount, 0)) / 1e7, 2) AS collected_cr,
+    ROUND(100.0 * SUM(COALESCE(e.paid_amount, 0)) / SUM(e.billed_amount), 1) AS collection_rate_pct,
+    d.denial_rate_pct
+FROM encounters e
+JOIN (
+    SELECT department,
+           ROUND(100.0 * SUM(CASE WHEN claim_status = 'Denied' THEN 1 ELSE 0 END) / COUNT(*), 1) AS denial_rate_pct
+    FROM encounters
+    GROUP BY department
+) d ON e.department = d.department
+GROUP BY e.department
+ORDER BY collection_rate_pct ASC;</pre>
+  </div>
+
+  <h2 class="section-title">Denial rate by payer</h2>
+  <p class="file-note">revenue_cycle_analysis.sql (continued)</p>
+  <div class="code-card">
+    <div class="code-head">
+      <span><span class="dot" style="background:#ff5f56;"></span><span class="dot" style="background:#ffbd2e;"></span><span class="dot" style="background:#27c93f;"></span> revenue_cycle_analysis.sql</span>
+      <button class="copy-btn" onclick="copyCode('sql-code3', this)">Copy</button>
+    </div>
+    <pre id="sql-code3">SELECT
+    payer,
+    COUNT(*) AS total_claims,
+    SUM(CASE WHEN claim_status = 'Denied' THEN 1 ELSE 0 END) AS denied_claims,
+    ROUND(100.0 * SUM(CASE WHEN claim_status = 'Denied' THEN 1 ELSE 0 END) / COUNT(*), 1) AS denial_rate_pct,
+    ROUND(SUM(CASE WHEN claim_status = 'Denied' THEN billed_amount ELSE 0 END) / 1e7, 2) AS denied_revenue_cr
+FROM encounters
+GROUP BY payer
+ORDER BY denial_rate_pct DESC;</pre>
+  </div>
+
+  <footer>
+    Dev Sahni &mdash; <a href="https://github.com/devsahni03/healthcare-revenue-analytics" target="_blank" rel="noopener" style="color:var(--navy); font-weight:600; text-decoration:none;">Full repo on GitHub</a>
+  </footer>
+</div>
+
+<script>
+function copyCode(id, btn) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const original = btn.textContent;
+    btn.textContent = "Copied!";
+    setTimeout(() => { btn.textContent = original; }, 1200);
+  });
+}
+</script>
+</body>
+</html>
