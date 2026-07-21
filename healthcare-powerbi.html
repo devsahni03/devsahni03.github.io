@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Power BI Report | Healthcare Revenue Analytics | Dev Sahni</title>
+<style>
+  :root {
+    --navy: #3b82f6; --navy-light: #60a5fa; --teal: #10b981; --coral: #f87171;
+    --bg: #090d16; --card: rgba(255,255,255,0.04); --border: rgba(255,255,255,0.10);
+    --text-primary: #e2e8f0; --text-secondary: #94a3b8; --text-muted: #64748b;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); background-image: radial-gradient(circle at 15% 10%, rgba(59,130,246,0.08), transparent 40%), radial-gradient(circle at 85% 30%, rgba(16,185,129,0.06), transparent 40%); background-attachment: fixed; color: var(--text-primary); }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 40px 24px 80px; }
+  .back-link { font-size: 13px; color: var(--navy); text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  h1 { font-size: 24px; color: var(--navy); margin: 14px 0 6px; }
+  p.lead { color: var(--text-secondary); font-size: 14.5px; max-width: 720px; line-height: 1.7; margin-bottom: 30px; }
+  h2.section-title { font-size: 15px; margin: 40px 0 12px; color: var(--text-primary); font-weight: 700; }
+  .report-img { width:100%; border-radius:8px; border:1px solid var(--border); }
+  .dax-card { background: #12161f; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); margin-top:14px; }
+  .code-head { display:flex; align-items:center; justify-content:space-between; background:#0b0e14; padding:9px 16px; font-size:12px; color:#8A93A0; font-family: monospace; }
+  .dax-card pre { margin:0; padding:20px; font-size:13px; line-height:1.65; color:#dbe2ea; font-family: "Fira Code","SFMono-Regular",Consolas,monospace; overflow-x:auto; }
+  .dot { width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:5px; }
+  .copy-btn { font-size:11.5px; color:#8A93A0; background:none; border:1px solid #2a3040; padding:4px 10px; border-radius:6px; cursor:pointer; font-family: inherit; }
+  .copy-btn:hover { color:#dbe2ea; border-color:#3d4657; }
+  footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="healthcare-dashboard.html">&larr; Back to dashboard</a>
+  <div class="nav-row" style="display:flex; gap:16px; margin-top:14px;">
+    <a class="switch-link" href="healthcare-sql.html" style="font-size:12.5px; font-weight:600; padding:6px 13px; border-radius:7px; text-decoration:none; border:1px solid var(--border); color:var(--text-secondary);">SQL</a>
+    <a class="switch-link" href="healthcare-python.html" style="font-size:12.5px; font-weight:600; padding:6px 13px; border-radius:7px; text-decoration:none; border:1px solid var(--border); color:var(--text-secondary);">Python</a>
+    <a class="switch-link active" href="healthcare-powerbi.html" style="font-size:12.5px; font-weight:600; padding:6px 13px; border-radius:7px; text-decoration:none; border:1px solid var(--navy); color:#fff; background:var(--navy);">Power BI</a>
+  </div>
+  <h1>Power BI Report &mdash; Healthcare Revenue Analytics</h1>
+  <p class="lead">A 2-page Power BI report built on the same 72,000-encounter dataset, with DAX measures for revenue leakage, denial rate, and a benchmark-based recovery opportunity calculation. The full <code>.pbix</code> file is in the <a href="https://github.com/devsahni03/healthcare-revenue-analytics" target="_blank" rel="noopener" style="color:var(--navy); font-weight:600;">GitHub repo</a>.</p>
+
+  <h2 class="section-title">Page 1 — Executive Overview</h2>
+  <img class="report-img" src="healthcare-powerbi-1.jpg" alt="Power BI Executive Overview page showing total encounters, billed and collected revenue, revenue leakage percent, collection rate, monthly billing trend, and revenue leakage by department">
+
+  <h2 class="section-title">Page 2 — Denial Analytics</h2>
+  <img class="report-img" src="healthcare-powerbi-2.jpg" alt="Power BI Denial Analytics page showing denied, paid, and pending claim counts, denial rate, denied revenue by payer, and denied claims by denial reason">
+
+  <h2 class="section-title">Page 3 — Recovery Opportunity</h2>
+  <img class="report-img" src="healthcare-powerbi-3.jpg" alt="Power BI Recovery Opportunity page showing recoverable revenue, revenue leakage in crores, recoverable revenue by payer and department, and executive recommendations">
+  <p style="font-size:12.5px; color:var(--text-muted); margin-top:6px;">Executive recommendations generated directly on this page: review payer contracts with high denial rates, strengthen claim validation before submission, prioritize recovery by department, and monitor monthly leakage trends.</p>
+
+  <h2 class="section-title">Key DAX measures</h2>
+  <div class="dax-card">
+    <div class="code-head">
+      <span><span class="dot" style="background:#ff5f56;"></span><span class="dot" style="background:#ffbd2e;"></span><span class="dot" style="background:#27c93f;"></span> measures.dax</span>
+      <button class="copy-btn" onclick="copyCode('dax-code', this)">Copy</button>
+    </div>
+    <pre id="dax-code">Revenue Leakage % =
+DIVIDE([Total Billed (Cr)] - [Total Collected (Cr)], [Total Billed (Cr)])
+
+Denial Rate % =
+DIVIDE(
+    CALCULATE(COUNTROWS(encounters), encounters[claim_status] = "Denied"),
+    COUNTROWS(encounters)
+)
+
+Best Payer Denial Rate % =
+CALCULATE(
+    MINX(
+        VALUES(encounters[payer]),
+        CALCULATE(
+            DIVIDE(
+                CALCULATE(COUNTROWS(encounters), encounters[claim_status]="Denied"),
+                CALCULATE(COUNTROWS(encounters))
+            )
+        )
+    ),
+    ALL(encounters[payer])
+)
+
+Recoverable Revenue (Cr) =
+VAR PayerDenialRate = [Denial Rate %]
+VAR BestRate = [Best Payer Denial Rate %]
+VAR Gap = MAX(PayerDenialRate - BestRate, 0)
+RETURN
+DIVIDE(Gap * SUM(encounters[billed_amount]), 10000000)</pre>
+  </div>
+
+  <footer>
+    Dev Sahni &mdash; <a href="https://github.com/devsahni03/healthcare-revenue-analytics" target="_blank" rel="noopener" style="color:var(--navy); font-weight:600; text-decoration:none;">Full repo on GitHub</a>
+  </footer>
+</div>
+
+<script>
+function copyCode(id, btn) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const original = btn.textContent;
+    btn.textContent = "Copied!";
+    setTimeout(() => { btn.textContent = original; }, 1200);
+  });
+}
+</script>
+</body>
+</html>
